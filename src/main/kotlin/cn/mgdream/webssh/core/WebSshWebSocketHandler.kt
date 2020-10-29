@@ -42,6 +42,7 @@ class WebSshWebSocketHandler : TextWebSocketHandler() {
             val buffer = ByteArray(1024)
             while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
                 val i = jSchInputStream.read(buffer)
+                if (i == -1) break
                 val string = String(buffer, 0, i)
                 session.sendMessage(TextMessage(string))
             }
