@@ -52,6 +52,7 @@ class WebSshWebSocketHandler : TextWebSocketHandler() {
         val jSchOutputStream = session.attributes["jSchOutputStream"]
         if (jSchOutputStream is OutputStream) {
             jSchOutputStream.write(message.payload.toByteArray())
+            jSchOutputStream.flush()
         }
     }
 
