@@ -7,8 +7,13 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 
 @Configuration
 @EnableWebSocket
-class WebSocketConfiguration(val webSshWebSocketHandler: WebSshWebSocketHandler) : WebSocketConfigurer {
+class WebSocketConfiguration(
+    val webSshWebSocketHandler: WebSshWebSocketHandler,
+    val handshakeInterceptors: Array<WebSshHandshakeInterceptor>
+) : WebSocketConfigurer {
     override fun registerWebSocketHandlers(registry: WebSocketHandlerRegistry) {
-        registry.addHandler(webSshWebSocketHandler, "/ws/webssh")
+        registry
+            .addHandler(webSshWebSocketHandler, "/ws/webssh")
+            .addInterceptors(*handshakeInterceptors)
     }
 }

@@ -1,6 +1,5 @@
 package cn.mgdream.webssh.core
 
-import com.jcraft.jsch.JSch
 import com.jcraft.jsch.Session
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.CloseStatus
@@ -17,13 +16,7 @@ class WebSshWebSocketHandler : TextWebSocketHandler() {
     private val executorService = Executors.newFixedThreadPool(MAX_VALUE)
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
-        val host: String? = System.getenv("webssh.host")
-        val port: String? = System.getenv("webssh.port")
-        val username: String? = System.getenv("webssh.username")
-        val password: String? = System.getenv("webssh.password")
-        val jSch = JSch()
-        val jSchSession = jSch.getSession(username ?: "root", host ?: "localhost", port?.toInt() ?: 22)
-        jSchSession.setPassword(password)
+        val jSchSession = session.attributes["jSchSession"] as Session
         jSchSession.userInfo = object : UserInfoAdapter() {
             override fun promptYesNo(message: String?): Boolean {
                 return true
