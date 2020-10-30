@@ -40,3 +40,5 @@ java -jar target/webssh-*.jar
 ```
 
 Now [WebSSH](http://localhost:8080/terminal.html) is available and automatic connect to your remote server.
+
+![Welcome](image/419DF6D1-1A5A-4B53-A00A-5B45C3EFF082.png)
