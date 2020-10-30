@@ -24,7 +24,7 @@ class WebSshWebSocketHandler : TextWebSocketHandler() {
         }
         executorService.submit {
             jSchSession.connect()
-            session.sendMessage(TextMessage("Connect successfully!\n\r"))
+            session.sendMessage(TextMessage("Connect successfully!\r\r"))
             val jSchChannel = jSchSession.openChannel("shell")
             jSchChannel.connect()
             val jSchInputStream = jSchChannel.inputStream
