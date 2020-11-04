@@ -8,7 +8,7 @@ import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.server.HandshakeInterceptor
 
 @Component
-class WebSshHandshakeInterceptor : HandshakeInterceptor {
+class WebSshHandshakeInterceptor(val webSshProperties: WebSshProperties) : HandshakeInterceptor {
 
     override fun beforeHandshake(
         request: ServerHttpRequest,
@@ -16,20 +16,19 @@ class WebSshHandshakeInterceptor : HandshakeInterceptor {
         wsHandler: WebSocketHandler,
         attributes: Map<String, Any>
     ): Boolean {
-        val enabled = System.getenv("webssh.enabled")?.toBoolean() ?: false
-        if (enabled) {
-            val host: String? = System.getenv("webssh.host")
-            val port: String? = System.getenv("webssh.port")
-            val username: String? = System.getenv("webssh.username")
-            val password: String? = System.getenv("webssh.password")
+        if (webSshProperties.enabled) {
             val jSch = JSch()
-            val jSchSession = jSch.getSession(username ?: "root", host ?: "localhost", port?.toInt() ?: 22)
-            jSchSession.setPassword(password)
+            val jSchSession = jSch.getSession(
+                webSshProperties.username,
+                webSshProperties.hostname,
+                webSshProperties.port ?: 22
+            )
+            jSchSession.setPassword(webSshProperties.password)
             if (attributes is MutableMap<String, Any>) {
                 attributes["jSchSession"] = jSchSession
             }
         }
-        return enabled
+        return webSshProperties.enabled
     }
 
     override fun afterHandshake(
