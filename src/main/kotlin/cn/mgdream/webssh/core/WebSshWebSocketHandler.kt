@@ -17,11 +17,6 @@ class WebSshWebSocketHandler : TextWebSocketHandler() {
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
         val jSchSession = session.attributes["jSchSession"] as Session
-        jSchSession.userInfo = object : UserInfoAdapter() {
-            override fun promptYesNo(message: String?): Boolean {
-                return true
-            }
-        }
         executorService.submit {
             jSchSession.connect()
             session.sendMessage(TextMessage("Connect successfully!\r\r"))

@@ -24,6 +24,11 @@ class WebSshHandshakeInterceptor(val webSshProperties: WebSshProperties) : Hands
                 webSshProperties.port ?: 22
             )
             jSchSession.setPassword(webSshProperties.password)
+            jSchSession.userInfo = object : UserInfoAdapter() {
+                override fun promptYesNo(message: String?): Boolean {
+                    return true
+                }
+            }
             if (attributes is MutableMap<String, Any>) {
                 attributes["jSchSession"] = jSchSession
             }
