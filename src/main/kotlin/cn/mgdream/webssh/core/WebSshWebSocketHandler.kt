@@ -18,8 +18,10 @@ class WebSshWebSocketHandler : TextWebSocketHandler() {
     override fun afterConnectionEstablished(session: WebSocketSession) {
         val jSchSession = session.attributes["jSchSession"] as Session
         executorService.submit {
+            session.sendMessage(TextMessage("Connecting..."))
             jSchSession.connect()
-            session.sendMessage(TextMessage("Connect successfully!\r\r"))
+            session.sendMessage(TextMessage("Connect successfully!"))
+            session.sendMessage(TextMessage("\u001b[H\u001b[2J"))
             val jSchChannel = jSchSession.openChannel("shell")
             jSchChannel.connect()
             val jSchInputStream = jSchChannel.inputStream
