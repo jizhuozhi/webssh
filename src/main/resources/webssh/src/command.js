@@ -1,10 +1,19 @@
 import {Terminal} from "xterm";
+import {FitAddon} from "xterm-addon-fit";
 import 'xterm/css/xterm.css'
 
 window.onload = function (event) {
     const terminal = new Terminal()
     terminal.open(document.querySelector("#terminal"))
+
     const socket = new WebSocket(location.origin.replace("http", "ws") + "/ws/webssh")
+
+    const fitAddon = new FitAddon()
+    terminal.loadAddon(fitAddon)
+    window.onresize = function (event) {
+        fitAddon.fit()
+    }
+
     socket.onopen = function (event) {
         terminal.write("\x1b[H\x1b[2J")
     }
