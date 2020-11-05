@@ -5,9 +5,31 @@ window.onload = function (event) {
     const terminal = new Terminal()
     terminal.open(document.querySelector("#terminal"))
     const socket = new WebSocket(location.origin.replace("http", "ws") + "/ws/webssh")
+    socket.onopen = function (event) {
+        terminal.write("\x1b[H\x1b[2J")
+    }
     socket.onmessage = function (event) {
         terminal.write(event.data)
     }
+    socket.onclose = function (event) {
+        terminal.write("\r\n")
+        terminal.write("Connection closed!")
+    }
+    socket.onerror = function (event) {
+        terminal.write("\r\n")
+        terminal.write("Connection error observed!")
+        console.error("Connection error observed!", event)
+    }
+    terminal.onResize(function (event) {
+        socket.send(JSON.stringify({
+            type: "RESIZE",
+            timestamp: Date.now(),
+            payload: {
+                cols: event.cols,
+                rows: event.rows
+            }
+        }))
+    })
     document.querySelector("#execute").addEventListener("click", function (event) {
         const command = document.querySelector("#command").value
         socket.send(JSON.stringify({
