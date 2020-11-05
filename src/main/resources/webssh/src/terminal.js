@@ -17,9 +17,13 @@ window.onload = function (event) {
         terminal.write(event.data)
     }
     terminal.onResize(function (event) {
-        socket.send(`stty cols ${event.cols} rows ${event.rows}\r`)
+        socket.send(JSON.stringify({
+            type: "DATA",
+            timestamp: Date.now(),
+            payload: `stty cols ${event.cols} rows ${event.rows}\r`
+        }))
     })
     terminal.onData(function (data) {
-        socket.send(data)
+        socket.send(JSON.stringify({type: "DATA", timestamp: Date.now(), payload: data}))
     })
 }

@@ -1,5 +1,8 @@
 package cn.mgdream.webssh.core
 
+import cn.mgdream.webssh.core.EventType.DATA
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.jcraft.jsch.Session
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.CloseStatus
@@ -9,9 +12,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 import java.io.OutputStream
 import java.util.concurrent.Executors
 import kotlin.Int.Companion.MAX_VALUE
+import kotlin.text.Charsets.UTF_8
 
 @Component
-class WebSshWebSocketHandler : TextWebSocketHandler() {
+class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHandler() {
 
     private val executorService = Executors.newFixedThreadPool(MAX_VALUE)
 
@@ -40,10 +44,14 @@ class WebSshWebSocketHandler : TextWebSocketHandler() {
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-        val jSchOutputStream = session.attributes["jSchOutputStream"]
-        if (jSchOutputStream is OutputStream) {
-            jSchOutputStream.write(message.payload.toByteArray())
-            jSchOutputStream.flush()
+        val jSchOutputStream = session.attributes["jSchOutputStream"] as OutputStream
+        val event = objectMapper.readValue<Event>(message.payload)
+        when (event.type) {
+            DATA -> {
+                val payload = event.payload as String
+                jSchOutputStream.write(payload.toByteArray(UTF_8))
+                jSchOutputStream.flush()
+            }
         }
     }
 
