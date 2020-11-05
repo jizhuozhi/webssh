@@ -8,6 +8,7 @@ import com.jcraft.jsch.Session
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.CloseStatus
+import org.springframework.web.socket.CloseStatus.NORMAL
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
@@ -32,10 +33,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         session.attributes["establishedTimestamp"] = currentTimeMillis()
         val jSchSession = session.attributes["jSchSession"] as Session
         executorService.submit {
-            session.sendMessage(TextMessage("Connecting..."))
             jSchSession.connect()
-            session.sendMessage(TextMessage("Connect successfully!"))
-            session.sendMessage(TextMessage("\u001b[H\u001b[2J"))
             val jSchChannel = jSchSession.openChannel("shell")
             jSchChannel.connect()
             val jSchInputStream = jSchChannel.inputStream
@@ -52,6 +50,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
                 val string = String(buffer, 0, i)
                 session.sendMessage(TextMessage(string))
             }
+            session.close(NORMAL)
         }
         executorService.submit {
             var times = 0
@@ -65,7 +64,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
                     && currentTimestamp - (lastClientTimestamp ?: 0) > timeout
                 ) {
                     logger.warn("[{}] No data transmission for a long time", session.id)
-                    session.close(CloseStatus.NORMAL)
+                    session.close(NORMAL)
                 } else {
                     val maxTimestamp = maxOf(establishedTimestamp, lastClientTimestamp ?: 0, lastServerTimestamp ?: 0)
                     val offset = currentTimestamp - maxTimestamp

@@ -12,9 +12,22 @@ window.onload = function (event) {
     }
 
     terminal.open(document.querySelector("#terminal"))
+    terminal.write("Connecting...")
     const socket = new WebSocket(location.origin.replace("http", "ws") + "/ws/webssh")
+    socket.onopen = function (event) {
+        terminal.write("\x1b[H\x1b[2J")
+    }
     socket.onmessage = function (event) {
         terminal.write(event.data)
+    }
+    socket.onclose = function (event) {
+        terminal.write("\r\n")
+        terminal.write("Connection closed!")
+    }
+    socket.onerror = function (event) {
+        terminal.write("\r\n")
+        terminal.write("Connection error observed!")
+        console.error("Connection error observed!", event)
     }
     terminal.onResize(function (event) {
         socket.send(JSON.stringify({
