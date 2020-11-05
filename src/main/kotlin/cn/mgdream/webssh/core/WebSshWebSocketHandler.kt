@@ -1,11 +1,11 @@
 package cn.mgdream.webssh.core
 
-import cn.mgdream.webssh.core.EventType.DATA
-import cn.mgdream.webssh.core.EventType.RESIZE
+import cn.mgdream.webssh.core.EventType.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.jcraft.jsch.ChannelShell
 import com.jcraft.jsch.Session
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
@@ -20,6 +20,10 @@ import kotlin.text.Charsets.UTF_8
 class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHandler() {
 
     private val executorService = Executors.newFixedThreadPool(MAX_VALUE)
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(WebSshWebSocketHandler::class.java)
+    }
 
     override fun afterConnectionEstablished(session: WebSocketSession) {
         val jSchSession = session.attributes["jSchSession"] as Session
@@ -50,9 +54,23 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         val jSchOutputStream = session.attributes["jSchOutputStream"] as OutputStream
         val event = objectMapper.readValue<Event>(message.payload)
         when (event.type) {
+            COMMAND -> {
+                val payload = event.payload as String
+                jSchOutputStream.write(payload.toByteArray(UTF_8))
+                jSchOutputStream.write('\r'.toInt())
+                jSchOutputStream.flush()
+            }
             DATA -> {
                 val payload = event.payload as String
                 jSchOutputStream.write(payload.toByteArray(UTF_8))
+                jSchOutputStream.flush()
+            }
+            INTERCEPT -> {
+                jSchOutputStream.write('\u0003'.toInt())
+                jSchOutputStream.flush()
+            }
+            NULL -> {
+                jSchOutputStream.write('\r'.toInt())
                 jSchOutputStream.flush()
             }
             RESIZE -> {

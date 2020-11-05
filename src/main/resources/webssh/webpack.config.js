@@ -4,7 +4,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     entry: {
-        terminal: "./src/terminal.js"
+        terminal: "./src/terminal.js",
+        command: "./src/command.js"
     },
     output: {
         filename: "[name].[contenthash].js",
@@ -24,9 +25,16 @@ module.exports = {
     plugins: [
         new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
+            title: "WebExec",
+            filename: "command.html",
+            template: "./public/command.html",
+            chunks: ["command"]
+        }),
+        new HtmlWebpackPlugin({
             title: "WebSSH",
             filename: "terminal.html",
-            template: "./public/terminal.html"
+            template: "./public/terminal.html",
+            chunks: ["terminal"]
         })
     ]
 }

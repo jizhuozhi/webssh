@@ -7,6 +7,9 @@ data class Event(
 )
 
 enum class EventType {
+    COMMAND,
     DATA,
+    INTERCEPT,
+    NULL,
     RESIZE
 }
