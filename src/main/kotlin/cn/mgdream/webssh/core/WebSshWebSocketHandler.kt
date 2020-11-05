@@ -1,8 +1,10 @@
 package cn.mgdream.webssh.core
 
 import cn.mgdream.webssh.core.EventType.DATA
+import cn.mgdream.webssh.core.EventType.RESIZE
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.jcraft.jsch.ChannelShell
 import com.jcraft.jsch.Session
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.CloseStatus
@@ -31,6 +33,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
             val jSchInputStream = jSchChannel.inputStream
             val jSchOutputStream = jSchChannel.outputStream
             session.attributes["jSchSession"] = jSchSession
+            session.attributes["jSchChannel"] = jSchChannel
             session.attributes["jSchInputStream"] = jSchInputStream
             session.attributes["jSchOutputStream"] = jSchOutputStream
             val buffer = ByteArray(1024)
@@ -51,6 +54,13 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
                 val payload = event.payload as String
                 jSchOutputStream.write(payload.toByteArray(UTF_8))
                 jSchOutputStream.flush()
+            }
+            RESIZE -> {
+                val jSchChannel = session.attributes["jSchChannel"] as ChannelShell
+                val payload = event.payload as Map<*, *>
+                val cols = payload["cols"].toString().toInt()
+                val rows = payload["rows"].toString().toInt()
+                jSchChannel.setPtySize(cols, rows, cols * 8, rows * 8)
             }
         }
     }

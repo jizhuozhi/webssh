@@ -8,4 +8,5 @@ data class Event(
 
 enum class EventType {
     DATA,
+    RESIZE
 }
