@@ -3,7 +3,6 @@ package cn.mgdream.webssh.core
 import cn.mgdream.webssh.core.EventType.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.jcraft.jsch.ChannelShell
 import com.jcraft.jsch.Session
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -16,7 +15,6 @@ import java.io.OutputStream
 import java.lang.System.currentTimeMillis
 import java.util.concurrent.Executors
 import kotlin.Int.Companion.MAX_VALUE
-import kotlin.text.Charsets.UTF_8
 
 @Component
 class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHandler() {
@@ -40,33 +38,13 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         session.attributes["lastClientTimestamp"] = currentTimeMillis()
         val jSchOutputStream = session.attributes["jSchOutputStream"] as OutputStream
         val event = objectMapper.readValue<Event>(message.payload)
+        val webSshEventHandler = WebSshEventHandler(session, jSchOutputStream)
         when (event.type) {
-            COMMAND -> {
-                val payload = event.payload as String
-                jSchOutputStream.write(payload.toByteArray(UTF_8))
-                jSchOutputStream.write('\r'.toInt())
-                jSchOutputStream.flush()
-            }
-            DATA -> {
-                val payload = event.payload as String
-                jSchOutputStream.write(payload.toByteArray(UTF_8))
-                jSchOutputStream.flush()
-            }
-            INTERCEPT -> {
-                jSchOutputStream.write('\u0003'.toInt())
-                jSchOutputStream.flush()
-            }
-            NULL -> {
-                jSchOutputStream.write('\r'.toInt())
-                jSchOutputStream.flush()
-            }
-            RESIZE -> {
-                val jSchChannel = session.attributes["jSchChannel"] as ChannelShell
-                val payload = event.payload as Map<*, *>
-                val cols = payload["cols"].toString().toInt()
-                val rows = payload["rows"].toString().toInt()
-                jSchChannel.setPtySize(cols, rows, cols * 8, rows * 8)
-            }
+            COMMAND -> webSshEventHandler.handleCommandEvent(event)
+            DATA -> webSshEventHandler.handleDataEvent(event)
+            INTERCEPT -> webSshEventHandler.handleInterceptEvent(event)
+            NULL -> webSshEventHandler.handleNullEvent(event)
+            RESIZE -> webSshEventHandler.handleResizeEvent(event)
         }
     }
 
