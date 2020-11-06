@@ -24,7 +24,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
     private val executorService = Executors.newFixedThreadPool(MAX_VALUE)
 
     companion object {
-        private val timeout = 60 * 1000L
+        private const val timeout = 60 * 1000L
         private val logger = LoggerFactory.getLogger(WebSshWebSocketHandler::class.java)
     }
 
@@ -32,50 +32,8 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         logger.info("[{}] Connection established!", session.id)
         session.attributes["establishedTimestamp"] = currentTimeMillis()
         val jSchSession = session.attributes["jSchSession"] as Session
-        executorService.submit {
-            jSchSession.connect()
-            val jSchChannel = jSchSession.openChannel("shell")
-            jSchChannel.connect()
-            val jSchInputStream = jSchChannel.inputStream
-            val jSchOutputStream = jSchChannel.outputStream
-            session.attributes["jSchSession"] = jSchSession
-            session.attributes["jSchChannel"] = jSchChannel
-            session.attributes["jSchInputStream"] = jSchInputStream
-            session.attributes["jSchOutputStream"] = jSchOutputStream
-            val buffer = ByteArray(1024)
-            while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
-                val i = jSchInputStream.read(buffer)
-                if (i == -1) break
-                session.attributes["lastServerTimestamp"] = currentTimeMillis()
-                val string = String(buffer, 0, i)
-                session.sendMessage(TextMessage(string))
-            }
-            session.close(NORMAL)
-        }
-        executorService.submit {
-            var times = 0
-            while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
-                val establishedTimestamp = session.attributes["establishedTimestamp"] as Long
-                val lastServerTimestamp = session.attributes["lastServerTimestamp"] as Long?
-                val lastClientTimestamp = session.attributes["lastClientTimestamp"] as Long?
-                val currentTimestamp = currentTimeMillis()
-                if (currentTimestamp - establishedTimestamp > timeout
-                    && currentTimestamp - (lastServerTimestamp ?: 0) > timeout
-                    && currentTimestamp - (lastClientTimestamp ?: 0) > timeout
-                ) {
-                    logger.warn("[{}] No data transmission for a long time", session.id)
-                    session.close(NORMAL)
-                } else {
-                    val maxTimestamp = maxOf(establishedTimestamp, lastClientTimestamp ?: 0, lastServerTimestamp ?: 0)
-                    val offset = currentTimestamp - maxTimestamp
-                    if (offset > (times + 1) * 10000) {
-                        times += 1
-                        logger.warn("[{}] No data transmission more than {} seconds", session.id, times * 10)
-                    }
-                    Thread.sleep(1000)
-                }
-            }
-        }
+        executorService.submit { transferData(session, jSchSession) }
+        executorService.submit { dataTransmissionWatchdog(session, jSchSession) }
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
@@ -117,6 +75,52 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         val jSchSession = session.attributes["jSchSession"]
         if (jSchSession is Session) {
             jSchSession.disconnect()
+        }
+    }
+
+    fun transferData(session: WebSocketSession, jSchSession: Session) {
+        jSchSession.connect()
+        val jSchChannel = jSchSession.openChannel("shell")
+        jSchChannel.connect()
+        val jSchInputStream = jSchChannel.inputStream
+        val jSchOutputStream = jSchChannel.outputStream
+        session.attributes["jSchSession"] = jSchSession
+        session.attributes["jSchChannel"] = jSchChannel
+        session.attributes["jSchInputStream"] = jSchInputStream
+        session.attributes["jSchOutputStream"] = jSchOutputStream
+        val buffer = ByteArray(1024)
+        while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
+            val i = jSchInputStream.read(buffer)
+            if (i == -1) break
+            session.attributes["lastServerTimestamp"] = currentTimeMillis()
+            val string = String(buffer, 0, i)
+            session.sendMessage(TextMessage(string))
+        }
+        session.close(NORMAL)
+    }
+
+    fun dataTransmissionWatchdog(session: WebSocketSession, jSchSession: Session) {
+        var times = 0
+        while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
+            val establishedTimestamp = session.attributes["establishedTimestamp"] as Long
+            val lastServerTimestamp = session.attributes["lastServerTimestamp"] as Long?
+            val lastClientTimestamp = session.attributes["lastClientTimestamp"] as Long?
+            val currentTimestamp = currentTimeMillis()
+            if (currentTimestamp - establishedTimestamp > timeout
+                && currentTimestamp - (lastServerTimestamp ?: 0) > timeout
+                && currentTimestamp - (lastClientTimestamp ?: 0) > timeout
+            ) {
+                logger.warn("[{}] No data transmission for a long time", session.id)
+                session.close(NORMAL)
+            } else {
+                val maxTimestamp = maxOf(establishedTimestamp, lastClientTimestamp ?: 0, lastServerTimestamp ?: 0)
+                val offset = currentTimestamp - maxTimestamp
+                if (offset > (times + 1) * 10000) {
+                    times += 1
+                    logger.warn("[{}] No data transmission more than {} seconds", session.id, times * 10)
+                }
+                Thread.sleep(1000)
+            }
         }
     }
 }
