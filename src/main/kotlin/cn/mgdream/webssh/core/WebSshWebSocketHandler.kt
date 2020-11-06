@@ -10,6 +10,7 @@ import org.springframework.web.socket.CloseStatus.NORMAL
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
+import java.io.InputStream
 import java.lang.System.currentTimeMillis
 import java.util.concurrent.Executors
 import kotlin.Int.Companion.MAX_VALUE
@@ -28,7 +29,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         logger.info("[{}] Connection established!", session.id)
         session.attributes["establishedTimestamp"] = currentTimeMillis()
         val jSchSession = session.attributes["jSchSession"] as Session
-        executorService.submit { transferData(session, jSchSession) }
+        executorService.submit { startConnecting(session, jSchSession) }
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
@@ -46,7 +47,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         }
     }
 
-    fun transferData(session: WebSocketSession, jSchSession: Session) {
+    fun startConnecting(session: WebSocketSession, jSchSession: Session) {
         jSchSession.connect()
         val jSchChannel = jSchSession.openChannel("shell")
         jSchChannel.connect()
@@ -56,8 +57,14 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         session.attributes["jSchChannel"] = jSchChannel
         session.attributes["jSchInputStream"] = jSchInputStream
         session.attributes["jSchOutputStream"] = jSchOutputStream
+        // Start transferring data after successful connection
+        executorService.submit { transferData(session, jSchSession) }
         // Start watchdog after successful connection
         executorService.submit { dataTransmissionWatchdog(session, jSchSession) }
+    }
+
+    fun transferData(session: WebSocketSession, jSchSession: Session) {
+        val jSchInputStream = session.attributes["jSchInputStream"] as InputStream
         val buffer = ByteArray(1024)
         while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
             val i = jSchInputStream.read(buffer)
