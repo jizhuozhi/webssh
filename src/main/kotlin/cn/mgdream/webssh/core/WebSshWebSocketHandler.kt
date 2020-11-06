@@ -10,7 +10,6 @@ import org.springframework.web.socket.CloseStatus.NORMAL
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
-import java.io.OutputStream
 import java.lang.System.currentTimeMillis
 import java.util.concurrent.Executors
 import kotlin.Int.Companion.MAX_VALUE
@@ -34,10 +33,9 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
         session.attributes["lastClientTimestamp"] = currentTimeMillis()
-        val jSchOutputStream = session.attributes["jSchOutputStream"] as OutputStream
         val event = objectMapper.readValue<Event>(message.payload)
-        val webSshEventHandler = WebSshEventHandler(session, jSchOutputStream)
-        webSshEventHandler.handleEvent(event)
+        val webSshEventHandler = WebSshEventHandler()
+        webSshEventHandler.handleEvent(event, session)
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
