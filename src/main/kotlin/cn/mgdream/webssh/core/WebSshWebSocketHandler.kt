@@ -79,7 +79,6 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
     }
 
     fun dataTransmissionWatchdog(session: WebSocketSession, jSchSession: Session) {
-        var times = 0
         while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
             val establishedTimestamp = session.attributes["establishedTimestamp"] as Long
             val lastServerTimestamp = session.attributes["lastServerTimestamp"] as Long?
@@ -92,12 +91,6 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
                 logger.warn("[{}] No data transmission for a long time", session.id)
                 session.close(NORMAL)
             } else {
-                val maxTimestamp = maxOf(establishedTimestamp, lastClientTimestamp ?: 0, lastServerTimestamp ?: 0)
-                val offset = currentTimestamp - maxTimestamp
-                if (offset > (times + 1) * 10000) {
-                    times += 1
-                    logger.warn("[{}] No data transmission more than {} seconds", session.id, times * 10)
-                }
                 Thread.sleep(1000)
             }
         }
