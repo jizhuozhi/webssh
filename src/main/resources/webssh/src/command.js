@@ -47,6 +47,12 @@ window.onload = function (event) {
                 timestamp: Date.now(),
                 payload: command
             }))
+        } else if (event.ctrlKey === true && event.keyCode === 67 /* Ctrl + C */) {
+            socket.send(JSON.stringify({
+                type: "INTERCEPT",
+                timestamp: Date.now(),
+                payload: null
+            }))
         }
     })
     document.querySelector("#execute").addEventListener("click", function (event) {
