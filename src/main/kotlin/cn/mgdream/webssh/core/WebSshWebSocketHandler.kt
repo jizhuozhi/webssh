@@ -31,7 +31,6 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         session.attributes["establishedTimestamp"] = currentTimeMillis()
         val jSchSession = session.attributes["jSchSession"] as Session
         executorService.submit { transferData(session, jSchSession) }
-        executorService.submit { dataTransmissionWatchdog(session, jSchSession) }
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
@@ -66,6 +65,8 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         session.attributes["jSchChannel"] = jSchChannel
         session.attributes["jSchInputStream"] = jSchInputStream
         session.attributes["jSchOutputStream"] = jSchOutputStream
+        // Start watchdog after successful connection
+        executorService.submit { dataTransmissionWatchdog(session, jSchSession) }
         val buffer = ByteArray(1024)
         while (!Thread.currentThread().isInterrupted && jSchSession.isConnected) {
             val i = jSchInputStream.read(buffer)
