@@ -1,6 +1,5 @@
 package cn.mgdream.webssh.core
 
-import cn.mgdream.webssh.core.EventType.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.jcraft.jsch.Session
@@ -38,13 +37,7 @@ class WebSshWebSocketHandler(val objectMapper: ObjectMapper) : TextWebSocketHand
         val jSchOutputStream = session.attributes["jSchOutputStream"] as OutputStream
         val event = objectMapper.readValue<Event>(message.payload)
         val webSshEventHandler = WebSshEventHandler(session, jSchOutputStream)
-        when (event.type) {
-            COMMAND -> webSshEventHandler.handleCommandEvent(event)
-            DATA -> webSshEventHandler.handleDataEvent(event)
-            INTERCEPT -> webSshEventHandler.handleInterceptEvent(event)
-            NULL -> webSshEventHandler.handleNullEvent(event)
-            RESIZE -> webSshEventHandler.handleResizeEvent(event)
-        }
+        webSshEventHandler.handleEvent(event)
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
