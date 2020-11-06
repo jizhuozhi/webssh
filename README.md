@@ -27,6 +27,7 @@ Before bootstrapping application, you should set environment variables to connec
 
 |Variable|Type|Description|Default Value|
 |---|---|----|---|
+|webssh.auto|Boolean|Whether auto create connection|false|
 |webssh.hostname|String|Remote server host likes ip and domain name|localhost|
 |webssh.port|Int|Remote server port|22|
 |webssh.username|String|Remote server username|root|

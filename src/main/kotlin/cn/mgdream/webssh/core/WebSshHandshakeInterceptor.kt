@@ -16,7 +16,8 @@ class WebSshHandshakeInterceptor(val webSshProperties: WebSshProperties) : Hands
         wsHandler: WebSocketHandler,
         attributes: Map<String, Any>
     ): Boolean {
-        if (webSshProperties.enabled) {
+        if (!webSshProperties.enabled) return false
+        if (webSshProperties.auto) {
             val jSch = JSch()
             val jSchSession = jSch.getSession(
                 webSshProperties.username,
@@ -33,7 +34,7 @@ class WebSshHandshakeInterceptor(val webSshProperties: WebSshProperties) : Hands
                 attributes["jSchSession"] = jSchSession
             }
         }
-        return webSshProperties.enabled
+        return true
     }
 
     override fun afterHandshake(

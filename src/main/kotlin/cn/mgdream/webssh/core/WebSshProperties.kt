@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 @ConfigurationProperties("webssh")
 @Component
 class WebSshProperties {
+    var auto: Boolean = false
     var hostname: String? = "localhost"
     var port: Int? = 22
     var username: String? = "root"
@@ -13,6 +14,6 @@ class WebSshProperties {
     var enabled: Boolean = false
 
     override fun toString(): String {
-        return "WebSshProperties(hostname=$hostname, port=$port, username=$username, password=[])"
+        return "WebSshProperties(auto=${auto}, hostname=$hostname, port=$port, username=$username, password=[])"
     }
 }
