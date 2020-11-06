@@ -39,6 +39,16 @@ window.onload = function (event) {
             }
         }))
     })
+    document.querySelector("#command").addEventListener("keydown", function (event) {
+        if (event.keyCode === 13 /* Enter */) {
+            const command = document.querySelector("#command").value
+            socket.send(JSON.stringify({
+                type: "COMMAND",
+                timestamp: Date.now(),
+                payload: command
+            }))
+        }
+    })
     document.querySelector("#execute").addEventListener("click", function (event) {
         const command = document.querySelector("#command").value
         socket.send(JSON.stringify({
