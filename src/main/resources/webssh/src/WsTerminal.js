@@ -46,8 +46,8 @@ export default class WsTerminal {
         }
 
         this.socket.onopen = () => {
-            this.runTerminal();
-        };
+            this.connectTerminal()
+        }
         this.socket.onclose = () => {
             this.handleSocketClose()
         }
@@ -56,9 +56,20 @@ export default class WsTerminal {
         };
     }
 
-    runTerminal() {
-        this.clearScreen()
+    connectTerminal() {
+        this.socket.onmessage = event => {
+            const data = JSON.parse(event.data)
+            if (data.type === 'CONNECT') {
+                this.runTerminal()
+            }
+        }
+        this.socket.send(JSON.stringify({
+            type: "CONNECT",
+            timestamp: Date.now()
+        }))
+    }
 
+    runTerminal() {
         // Only terminal type is interactive
         if (this.type === 'terminal') {
             this.terminal.on('data', data => {
@@ -78,10 +89,12 @@ export default class WsTerminal {
             }))
         })
 
-        this.socket.addEventListener('message', event => {
-            this.terminal.write(event.data);
-        });
-
+        this.socket.onmessage = event => {
+            const data = JSON.parse(event.data)
+            if (data.type === 'DATA') {
+                this.terminal.write(data.payload);
+            }
+        }
         this.fitAddon.fit();
     }
 
